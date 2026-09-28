@@ -18,7 +18,7 @@ BASELINE_SHA256 = (
 )
 PROTECTED = (
     ROOT
-    / "tmp/tp7d213f64_7fad_4bfa_b722_0771b21d9640/protected_after.csv"
+    / "data/provenance/baselines/f8bcd83/protected_after.csv"
 )
 PROTECTED_SHA256 = (
     "496e4bbbbe5786bbb21b63d3c320dcfd"

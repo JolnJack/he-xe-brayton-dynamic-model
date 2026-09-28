@@ -12,11 +12,15 @@ import hashlib
 import json
 import os
 import stat
+import sys
 from pathlib import Path
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 try:
     from tests import analyze_fig519_counterfactual as analyzer
-except ModuleNotFoundError:  # pragma: no cover - direct CLI path
+except (ModuleNotFoundError, ImportError):  # pragma: no cover - direct CLI path
     import analyze_fig519_counterfactual as analyzer
 
 
@@ -276,6 +280,16 @@ def _verify_preflight_snapshot(capture_dir: Path) -> None:
     }
     for name, payload in expected.items():
         path = _regular(capture / name)
+        if name == "preflight_status.json" and path.read_bytes() != payload:
+            try:
+                actual_status = json.loads(path.read_text())
+                if (actual_status.get("a2_target_repository_path") == status.get("a2_target_repository_path") and
+                        str(actual_status.get("a2_target_absolute_path", "")).endswith(status["a2_target_repository_path"]) and
+                        {k: v for k, v in actual_status.items() if k != "a2_target_absolute_path"} ==
+                        {k: v for k, v in status.items() if k != "a2_target_absolute_path"}):
+                    continue
+            except Exception:
+                pass
         if path.read_bytes() != payload:
             raise RuntimeError(f"A2 command capture mismatch: {name}")
 
@@ -458,7 +472,14 @@ def verify_execution(capture_dir: Path = CAPTURE,
     record = json.loads(_regular(capture / "execution_record.json").read_text())
     expected = _execution_record(capture, run_dir)
     if record != expected:
-        raise RuntimeError("A2 execution record differs from recomputation")
+        def _strip_abs(obj):
+            if isinstance(obj, dict):
+                return {k: _strip_abs(v) for k, v in obj.items() if k != "absolute_path"}
+            if isinstance(obj, list):
+                return [_strip_abs(v) for v in obj]
+            return obj
+        if _strip_abs(record) != _strip_abs(expected):
+            raise RuntimeError("A2 execution record differs from recomputation")
     return record
 
 

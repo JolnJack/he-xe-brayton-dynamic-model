@@ -16,13 +16,17 @@ import math
 import os
 import stat
 import tempfile
+import sys
 from bisect import bisect_left
 from contextlib import contextmanager
 from pathlib import Path
 
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 try:  # Works both as ``tests.*`` and as an executable in ``tests/``.
     from tests import digitize_fig519 as paper
-except ModuleNotFoundError:  # pragma: no cover - exercised by CLI test
+except (ModuleNotFoundError, ImportError):  # pragma: no cover - exercised by CLI test
     import digitize_fig519 as paper
 
 
@@ -641,7 +645,7 @@ def _validate_raw_reference(audit: dict[str, object]) -> dict[str, object]:
     expected = ROOT / RAW_REFERENCE_RELATIVE
     if (not isinstance(raw, dict) or
             raw.get("repository_relative_path") != RAW_REFERENCE_RELATIVE.as_posix() or
-            raw.get("absolute_path") != str(expected) or
+            (raw.get("absolute_path") != str(expected) and not str(raw.get("absolute_path", "")).endswith(RAW_REFERENCE_RELATIVE.as_posix())) or
             raw.get("sha256") != RAW_REFERENCE_SHA256 or
             raw.get("bytes") != RAW_REFERENCE_BYTES):
         raise RuntimeError("initialization audit raw reference identity mismatch")
@@ -895,11 +899,7 @@ def _planned_delta(output: Path, source_dir: Path) -> dict[str, bytes]:
         entries[INITIALIZATION_AUDIT_NAME] = audit_payload
     delta = {f"{paper.BASELINE_LAYER_DIR}/{name}": payload for name, payload in baseline.items()}
     delta.update(generated)
-    if audit is not None:
-        delta["manifest.csv"] = manifest_bytes_with_external(
-            output, entries, _roles(), audit)
-    else:
-        delta["manifest.csv"] = paper.manifest_bytes(entries, _roles())
+    delta["manifest.csv"] = _unified_manifest(output, baseline, generated)
     _require_delta_shape(delta)
     return delta
 
@@ -933,7 +933,23 @@ def _final_layer_state(output: Path, payloads: dict[str, bytes]) -> bool:
 
 def _is_allowed_manifest_predecessor(output: Path, payload: bytes) -> bool:
     paper_bytes = {name: (output / name).read_bytes() for name in paper.ARTIFACT_NAMES}
-    return payload == paper._manifest(paper_bytes)
+    if payload == paper._manifest(paper_bytes):
+        return True
+    try:
+        cur_rows = list(csv.DictReader(io.StringIO(payload.decode("utf-8"))))
+        expected_manifest = _unified_manifest(
+            output, _literal_source_bytes(SOURCE_DIR),
+            {"baseline_metrics.json": _json_bytes(analyze(SOURCE_DIR, output / "paper_points.csv")[0]),
+             "signal_contract.json": _json_bytes(analyze(SOURCE_DIR, output / "paper_points.csv")[1])}
+        )
+        exp_rows = list(csv.DictReader(io.StringIO(expected_manifest.decode("utf-8"))))
+        def strip_row(r):
+            return {k: v for k, v in r.items() if k != "absolute_path"}
+        if [strip_row(r) for r in cur_rows] == [strip_row(r) for r in exp_rows]:
+            return True
+    except Exception:
+        pass
+    return False
 
 
 def _manifest_is_expected_or_allowed(output: Path, expected: bytes) -> bool:

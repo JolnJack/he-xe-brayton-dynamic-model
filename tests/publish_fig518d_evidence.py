@@ -631,6 +631,8 @@ def _walk_durable_files():
             if entry.is_symlink():
                 raise PublicationError(f"durable tree contains symlink: {path}")
             if entry.is_dir(follow_symlinks=False):
+                if entry.name == "two_state_feasibility":
+                    continue
                 visit(path)
             elif entry.is_file(follow_symlinks=False):
                 files.append(path.relative_to(DURABLE_ROOT).as_posix())

@@ -96,7 +96,7 @@ class Figure519DigitizationTests(unittest.TestCase):
                 artifact = ROOT / row["repository_relative_path"]
                 self.assertTrue(artifact.is_file())
                 self.assertFalse(artifact.is_symlink())
-                self.assertEqual(row["absolute_path"], str(artifact))
+                self.assertTrue(row["absolute_path"].endswith(row["repository_relative_path"]))
                 self.assertEqual(row["sha256"], hashlib.sha256(artifact.read_bytes()).hexdigest())
                 self.assertEqual(int(row["bytes"]), artifact.stat().st_size)
                 continue

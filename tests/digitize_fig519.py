@@ -20,7 +20,7 @@ from PIL import Image, ImageDraw
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "tmp/steady53_recheck_20260827/paper-106.png"
+SOURCE = ROOT / "data/provenance/steady53/fig5_19/source_page_106.png"
 OUTPUT = ROOT / "data/provenance/steady53/fig5_19"
 SOURCE_SHA256 = "770d193eaca80742ef5ece0ef5ba6d0bc20ad7aaa8ca2ac9b60a4799d1f0a1e2"
 PDF_SHA256 = "983bfc23712221f30202a47875cbe34c9559edf79b9c332aa20931b6075e4e7a"

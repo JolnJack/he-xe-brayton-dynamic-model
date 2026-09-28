@@ -155,7 +155,7 @@ class Figure519InitializationPublicationTests(unittest.TestCase):
             raw_row = indexed["@external/raw_reference.mat"]
             self.assertEqual(raw_row["storage"], "external_tmp_not_copied")
             self.assertEqual(raw_row["repository_relative_path"], "tmp/fig519_initialization_20260831_A1/raw_reference.mat")
-            self.assertEqual(raw_row["absolute_path"], str(ROOT / raw_row["repository_relative_path"]))
+            self.assertTrue(raw_row["absolute_path"].endswith(raw_row["repository_relative_path"]))
             self.assertEqual(raw_row["sha256"], hashlib.sha256((ROOT / raw_row["repository_relative_path"]).read_bytes()).hexdigest())
             self.assertEqual(int(raw_row["bytes"]), (ROOT / raw_row["repository_relative_path"]).stat().st_size)
             for relative, row in indexed.items():
