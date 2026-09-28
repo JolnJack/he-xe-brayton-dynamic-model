@@ -85,7 +85,7 @@ start;
 | [`docs/STATUS.md`](docs/STATUS.md) | 最新工作状态、已闭合结论、下一步探索计划 | 日常科研进度跟踪 |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | D01/D02/D03 决策记录，回热器与转速排查全过程 | 深入排查系统动力学机制 |
 | [`docs/model_inventory.tsv`](docs/model_inventory.tsv) | 历史所有 SLX 模型的 SHA-256 清单及角色说明 | 防模型混淆与版本回溯 |
-| [`sources/README.md`](sources/README.md) | 包含徐驰硕士论文、NASA报告在内的文献出处统一入口 | 溯源文献出处 |
+| [`sources/README.md`](sources/README.md) | 包含徐驰博士学位论文、NASA报告在内的文献出处统一入口 | 溯源文献出处 |
 
 ---
 
