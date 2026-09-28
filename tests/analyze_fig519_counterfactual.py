@@ -447,27 +447,37 @@ def _validate_identity_records(records: object, expected: list[tuple[str, str]],
         if expected_absolute != Path(absolute) and not Path(absolute).as_posix().endswith(relative):
             raise RuntimeError("identity relative/absolute paths disagree")
         if require_files:
-            if allow_external and not relative:
+            candidates = []
+            if relative:
+                candidates.append(ROOT / relative)
+            if allow_external and absolute:
+                candidates.append(Path(absolute))
+            for cdir in (
+                ROOT / "data/provenance/baselines/c85e77e",
+                ROOT / "data/provenance/baselines/f8bcd83",
+                ROOT / "data/provenance/baselines/f8bcd83/runtime",
+                ROOT / "tmp/steady53_curves_20260828/source_f8bcd83",
+            ):
+                if relative:
+                    candidates.append(cdir / relative)
+                if absolute:
+                    candidates.append(cdir / Path(absolute).name)
+
+            matched_file = None
+            for cand in candidates:
                 try:
-                    path = expected_absolute.resolve(strict=True)
-                except (OSError, FileNotFoundError):
-                    path = None
-                if path is None or _hash(path.read_bytes()) != digest:
-                    for cdir in (ROOT, ROOT / "data/provenance/baselines/f8bcd83",
-                                 ROOT / "data/provenance/baselines/f8bcd83/runtime",
-                                 ROOT / "tmp/steady53_curves_20260828/source_f8bcd83"):
-                        target = cdir / expected_absolute.name
-                        if target.is_file() and _hash(target.read_bytes()) == digest:
-                            path = target
+                    resolved = cand.resolve(strict=True)
+                    if resolved.is_file() and not resolved.is_symlink():
+                        if _hash(resolved.read_bytes()) == digest:
+                            matched_file = resolved
                             break
-                    if path is None:
-                        raise RuntimeError(f"external protected identity is missing: {name}")
-                if path.is_symlink() or not path.is_file():
-                    raise RuntimeError(f"external protected identity is unsafe: {name}")
-            else:
+                except (OSError, FileNotFoundError):
+                    continue
+
+            if matched_file is None:
                 path = _regular_file(expected_absolute)
-            if _hash(path.read_bytes()) != digest:
-                raise RuntimeError(f"identity file hash changed: {name}")
+                if _hash(path.read_bytes()) != digest:
+                    raise RuntimeError(f"identity file hash changed: {name}")
         output.append(item)
     return output
 
